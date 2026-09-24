@@ -45,6 +45,7 @@ public:
     bool found = false;
 
     PANZER_BUILD_EQSET_OBJECTS("Biot", EquationSet_Biot)
+    PANZER_BUILD_EQSET_OBJECTS("CDR", EquationSet_ConvectionDiffusionReaction)
     PANZER_BUILD_EQSET_OBJECTS("Convection-Diffusion-Reaction",
                                EquationSet_ConvectionDiffusionReaction)
     PANZER_BUILD_EQSET_OBJECTS("Energy-Transport", EquationSet_EnergyTransport)

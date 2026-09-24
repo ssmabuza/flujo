@@ -8,7 +8,8 @@
 #define __Flujo_Driver_HPP__
 
 #include <vector>
-
+#include <string>
+#include <memory>
 #include <stdexcept>
 
 #include <Teuchos_RCP.hpp>
@@ -16,11 +17,16 @@
 #include <Teuchos_Comm.hpp>
 #include <Teuchos_DefaultComm.hpp>
 #include <Teuchos_DefaultMpiComm.hpp>
-#include <Teuchos_DefaultSerialComm.hpp>
 
 #include <Panzer_EquationSet_Factory.hpp>
 #include <Panzer_ClosureModel_Factory_TemplateManager.hpp>
 #include <Panzer_BCStrategy_Factory.hpp>
+#include <Panzer_Traits.hpp>
+#include <Panzer_LinearObjFactory.hpp>
+#include <Panzer_ResponseLibrary.hpp>
+
+#include <Thyra_ModelEvaluator.hpp>
+#include <Thyra_VectorBase.hpp>
 
 namespace panzer {
 class ConnManager;
@@ -33,14 +39,16 @@ class GlobalData;
 namespace panzer_stk {
 class STK_Interface;
 class STK_MeshFactory;
+template <typename ScalarT>
+class ModelEvaluatorFactory;
 }  // namespace panzer_stk
 
 namespace flujo {
 
 /**
  * @brief Base driver: wires Panzer STK mesh, physics blocks, ConnManager, DOF manager,
- *        and workset container from input ParameterLists (same overall layout as
- *        Panzer mini-em / main_driver examples).
+ *        workset container, model evaluators (physics & solver), observers, and solution
+ *        pipeline from input ParameterLists.
  */
 class Driver {
  public:
@@ -73,12 +81,37 @@ class Driver {
 
   Teuchos::RCP<panzer::GlobalData> getGlobalData() const { return global_data_; }
 
+  Teuchos::RCP<panzer::LinearObjFactory<panzer::Traits>> getLinearObjFactory() const {
+    return lin_obj_factory_;
+  }
+
+  Teuchos::RCP<Thyra::ModelEvaluator<double>> getPhysicsModelEvaluator() const {
+    return physics_;
+  }
+
+  Teuchos::RCP<Thyra::ModelEvaluator<double>> getSolverModelEvaluator() const {
+    return solver_;
+  }
+
+  Teuchos::RCP<panzer::ResponseLibrary<panzer::Traits>> getResponseLibrary() const {
+    return response_library_;
+  }
+
+  Teuchos::RCP<panzer::ResponseLibrary<panzer::Traits>> getSTKIOResponseLibrary() const {
+    return stk_io_response_library_;
+  }
+
+  Teuchos::RCP<Thyra::VectorBase<double>> getSolutionVector() const {
+    return gx_;
+  }
+
  protected:
   Teuchos::RCP<const Teuchos::MpiComm<int>> comm_;
   Teuchos::RCP<const panzer::EquationSetFactory> eqset_factory_;
   Teuchos::RCP<const panzer::ClosureModelFactory_TemplateManager<panzer::Traits>> cm_factory_;
   Teuchos::RCP<const panzer::BCStrategyFactory> bc_factory_;
 
+  Teuchos::RCP<Teuchos::ParameterList> input_params_;
   Teuchos::RCP<panzer::GlobalData> global_data_;
 
   Teuchos::RCP<panzer_stk::STK_MeshFactory> mesh_factory_;
@@ -88,8 +121,17 @@ class Driver {
 
   Teuchos::RCP<panzer::ConnManager> conn_manager_;
   Teuchos::RCP<panzer::GlobalIndexer> global_indexer_;
+  Teuchos::RCP<panzer::LinearObjFactory<panzer::Traits>> lin_obj_factory_;
 
   Teuchos::RCP<panzer::WorksetContainer> workset_container_;
+
+  Teuchos::RCP<Thyra::ModelEvaluator<double>> physics_;
+  Teuchos::RCP<Thyra::ModelEvaluator<double>> solver_;
+
+  Teuchos::RCP<panzer::ResponseLibrary<panzer::Traits>> response_library_;
+  Teuchos::RCP<panzer::ResponseLibrary<panzer::Traits>> stk_io_response_library_;
+
+  mutable Teuchos::RCP<Thyra::VectorBase<double>> gx_;
 };
 
 }  // namespace flujo
